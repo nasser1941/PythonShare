@@ -21,9 +21,11 @@ import json
 from collections import defaultdict
 
 import cv2
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance
 import numpy as np
 from scipy.ndimage.filters import rank_filter
+from PIL import ImageFilter
+from scipy import ndimage
 
 np.set_printoptions(threshold=np.nan)
 
@@ -118,15 +120,17 @@ def find_components(edges, max_components=16):
     count = 21
     dilation = 5
     n = 1
-    while count > 16:
+    while count > max_components:
         n += 1
         dilated_image = dilate(edges, N=3, iterations=n)
         image1, contours, hierarchy = cv2.findContours(dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         count = len(contours)
-    #print dilation
+
     Image.fromarray(edges).show()
-    Image.fromarray(255 * dilated_image).show()
-    return contours
+
+    Image.fromarray(255 * dilated_image).save('images/autorotate/dilated_image.jpg')
+    img3 = cv2.imread('images/autorotate/dilated_image.jpg',0)
+    return contours, img3
 
 
 def find_optimal_components_subset(contours, edges):
@@ -241,8 +245,44 @@ def process_image(path, out_path):
 
     edges = cv2.Canny(np.asarray(im), 100, 200)
 
+    image1, contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    borders = find_border_components(contours, edges)
+    borders.sort(key=lambda (i, x1, y1, x2, y2): (x2 - x1) * (y2 - y1))
 
-    # TODO: dilate image _before_ finding a border. This is crazy sensitive!
+    border_contour = None
+    if len(borders):
+        border_contour = contours[borders[0][0]]
+        edges = remove_border(border_contour, edges)
+
+    edges = 255 * (edges > 0).astype(np.uint8)
+    # Remove ~1px borders using a rank filter.
+    maxed_rows = rank_filter(edges, -4, size=(1, 20))
+    maxed_cols = rank_filter(edges, -4, size=(20, 1))
+    debordered = np.minimum(np.minimum(edges, maxed_rows), maxed_cols)
+    edges = debordered
+    contours, img3 = find_components(edges)
+    if len(contours) == 0:
+        print '%s -> (no text!)' % path
+        return
+
+    height, width = img3.shape
+    edges2 = cv2.Canny(img3, 50, 150, apertureSize=3)
+    Image.fromarray(edges2).show()
+    lines2 = cv2.HoughLinesP(edges2, 1, np.pi / 180, 100, minLineLength=width / 10.0, maxLineGap=20)
+    angle = 0.0
+    for linp in lines2[0]:
+        angle += np.arctan2(linp[2] - linp[0], linp[3] - linp[1])
+        # cv2.imwrite('images/autorotate/houghlines.jpg', img3)
+
+    imgFinal = cv2.imread(path, 0)
+    deskewed_image = ndimage.rotate(imgFinal, angle/len(lines2[0]))
+    cv2.imwrite('images/autorotate/process1.jpg', deskewed_image)
+
+def process_image2(path, out_path):
+    orig_im = Image.open(path)
+    scale, im = downscale_image(orig_im)
+
+    edges = cv2.Canny(np.asarray(im), 100, 200)
 
     image1, contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     borders = find_border_components(contours, edges)
@@ -254,41 +294,36 @@ def process_image(path, out_path):
         edges = remove_border(border_contour, edges)
 
     edges = 255 * (edges > 0).astype(np.uint8)
-
     # Remove ~1px borders using a rank filter.
     maxed_rows = rank_filter(edges, -4, size=(1, 20))
     maxed_cols = rank_filter(edges, -4, size=(20, 1))
     debordered = np.minimum(np.minimum(edges, maxed_rows), maxed_cols)
     edges = debordered
-
-    contours = find_components(edges)
-    print contours[0]
-
-
+    contours, img3 = find_components(edges)
     if len(contours) == 0:
         print '%s -> (no text!)' % path
         return
 
     crop = find_optimal_components_subset(contours, edges)
-    print crop
     crop = pad_crop(crop, contours, edges, border_contour)
 
     crop = [int(x / scale) for x in crop]  # upscale to the original image size.
-    #draw = ImageDraw.Draw(im)
-    #c_info = props_for_contours(contours, edges)
-    #for c in c_info:
-    #    this_crop = c['x1'], c['y1'], c['x2'], c['y2']
-    #    draw.rectangle(this_crop, outline='blue')
-    #draw.rectangle(crop, outline='red')
+    draw = ImageDraw.Draw(im)
+    c_info = props_for_contours(contours, edges)
+    for c in c_info:
+        this_crop = c['x1'], c['y1'], c['x2'], c['y2']
+        draw.rectangle(this_crop, outline='blue')
+    draw.rectangle(crop, outline='red')
     #im.save(out_path)
     #draw.text((50, 50), path, fill='red')
     #orig_im.save(out_path)
-    #im.show()
+    im.show()
     text_im = orig_im.crop(crop)
     text_im.save(out_path)
-    print '%s -> %s' % (path, out_path)
+    #print '%s -> %s' % (path, out_path)
 
-process_image('images/source/sketext.jpg', 'images/naser.jpg')
+process_image('images/source/scanned3.jpg', 'images/autorotate/process1.jpg')
+process_image2('images/autorotate/process1.jpg', 'images/autorotate/process2.jpg')
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and '*' in sys.argv[1]:
