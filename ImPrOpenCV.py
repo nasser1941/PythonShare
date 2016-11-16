@@ -7,7 +7,7 @@ from PIL import ImageFilter
 from matplotlib import pyplot as plt
 
 #Read Image in OpenCV
-img = cv2.imread('images/source/scan001.jpg',0)
+img = cv2.imread('images/source/image480.jpg',0)
 
 #rotation of an image by the specified angle
 def rotateImage(image, angle):
