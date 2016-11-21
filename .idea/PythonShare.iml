@@ -6,5 +6,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="TensorFlow-Examples" />
     <orderEntry type="module" module-name="oldnyc" />
+    <orderEntry type="module" module-name="pesci" />
   </component>
 </module>
