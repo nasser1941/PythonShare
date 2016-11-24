@@ -6,7 +6,7 @@ import copy
 import pickle
 
 ######################################################################
-with open('train/train/ANNOTATION/fishList.pkl', 'rb') as input:
+with open('FishDetectionFolder/train/train/ANNOTATION/fishList.pkl', 'rb') as input:
     fishList = pickle.load(input)
 #shuffling the list for 10 times
 print('Shuffling the list for 10 times...')
@@ -30,7 +30,7 @@ display_step = 1
 
 # Network Parameters
 n_input = 65536 # (img shape: 256*256)
-n_classes = 12 # total out puts - x, y, hight, width, tailx, taily, headx, heady
+n_classes = 8 # total out puts tailx, taily, headx, heady, upfin and downfin as well
 dropout = 0.75 # Dropout, probability to keep units
 
 # tf Graph input
@@ -128,11 +128,15 @@ pred = conv_net(x, weights, biases, keep_prob)
 
 # Define loss and optimizer
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize( )
 
 # Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+#correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+#correct_pred = tf.sub(pred, y)
+#accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
+accuracy = tf.reduce_mean(tf.sqrt( tf.reduce_sum(tf.square(tf.sub(pred, y)),
+                                    reduction_indices=1)))
 
 # Initializing the variables
 init = tf.initialize_all_variables()
@@ -148,7 +152,7 @@ with tf.Session() as sess:
         batch_y = np.empty((0, 12), int)
         for i in range(batch_size):
             batch_x = np.append(batch_x, np.array([fishListTrain[i].fishPixels]), axis=0)
-            oneY = [fishListTrain[i].fish_X, fishListTrain[i].fish_Y, fishListTrain[i].fish_H, fishListTrain[i].fish_W, fishListTrain[i].head_X, fishListTrain[i].head_Y, fishListTrain[i].tail_X, fishListTrain[i].tail_Y, fishListTrain[i].upfin_X, fishListTrain[i].upfin_Y, fishListTrain[i].lowfin_X, fishListTrain[i].lowfin_Y]
+            oneY = [fishListTrain[i].head_X, fishListTrain[i].head_Y, fishListTrain[i].tail_X, fishListTrain[i].tail_Y, fishListTrain[i].upfin_X, fishListTrain[i].upfin_Y, fishListTrain[i].lowfin_X, fishListTrain[i].lowfin_Y]
             batch_y = np.append(batch_y, np.array([oneY]), axis=0)
 
         # Run optimization op (backprop)
@@ -170,7 +174,7 @@ with tf.Session() as sess:
     test_y = np.empty((0, 8), int)
     for test in fishListTest:
         test_x = np.append(test_x, np.array([test.fishPixels]), axis=0)
-        oneY = [test.fish_X, test.fish_Y, test.fish_H, test.fish_W, test.head_X, test.head_Y, test.tail_X, test.tail_Y, test.upfin_X, test.upfin_Y, test.lowfin_X, test.lowfin_Y]
+        oneY = [test.head_X, test.head_Y, test.tail_X, test.tail_Y, test.upfin_X, test.upfin_Y, test.lowfin_X, test.lowfin_Y]
         test_y = np.append(test_y, np.array([oneY]), axis=0)
     print("Testing Accuracy:", \
         sess.run(accuracy, feed_dict={x: test_x,

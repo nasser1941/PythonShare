@@ -1,7 +1,9 @@
 import os
 from scipy import ndimage, misc
+from os import listdir
+from os.path import isfile, join
 import numpy as np
-
+import sys
 
 
 #add salt and pepper noise to the image
@@ -45,7 +47,7 @@ def Colors_noise(mypath):
 
     #listdir returns a list with the content of the directory specified in mypath
 
-    onlyfiles = [f for f in os.listdir(mypath) if os.isfile(os.join(mypath, f))]
+    onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
     #it cycles on every image inside the folder specified in mypath and save the modified images in the folder newpath
     for f in onlyfiles:
@@ -72,7 +74,7 @@ def Colors_noise(mypath):
     print('OK!')
 
 
-Colors_noise("train/train/BET_ORIG")
+Colors_noise('/home/terminale3/PycharmProjects/PythonShare/FishDetectionFolder/train/train/YFT/resize')
 
 
 
