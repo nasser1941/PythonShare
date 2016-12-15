@@ -3,9 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/PythonShare.iml" filepath="$PROJECT_DIR$/.idea/PythonShare.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../TensorFlow-Examples/.idea/TensorFlow-Examples.iml" filepath="$PROJECT_DIR$/../TensorFlow-Examples/.idea/TensorFlow-Examples.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../oldnyc/.idea/oldnyc.iml" filepath="$PROJECT_DIR$/../oldnyc/.idea/oldnyc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../pesci/.idea/pesci.iml" filepath="$PROJECT_DIR$/../pesci/.idea/pesci.iml" />
     </modules>
   </component>
 </project>
